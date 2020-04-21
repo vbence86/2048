@@ -1,0 +1,14 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: black;
+}
+
+#game {
+  margin: auto;
+  top: 50%;
+  position: absolute;
+  width: 100%;
+  transform: translate(0%, -50%);
+  height: 100%;          
+}
