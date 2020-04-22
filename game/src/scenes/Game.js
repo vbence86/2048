@@ -3,21 +3,22 @@ import logoImg from "../assets/logo.png";
 import Scene from './Scene';
 
 class Game extends Scene {
+  /**
+   * Preload state
+   */
   preload() {
     this.load.image("logo", logoImg);
   }
 
+  /**
+   * Creates the scene
+   */
   create() {
-    const logo = this.add.image(400, 150, "logo");
-
-    this.tweens.add({
-      targets: logo,
-      y: 450,
-      duration: 2000,
-      ease: "Power2",
-      yoyo: true,
-      loop: -1
-    });
+    const { config } = this.game;
+    const x = config.width / 2;
+    const y = config.height / 2;
+    const logo = this.add.image(x, y, "logo");
+    logo.setOrigin(0.5);
   } 
 }
 

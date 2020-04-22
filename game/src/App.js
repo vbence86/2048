@@ -21,11 +21,15 @@ class App {
   initPhaserGame(params) {
     const { width, height, parent } = params;
     this.game = new Phaser.Game({
-      width: width || DEFAULT_CANVAS_WIDTH,
-      height: height || DEFAULT_CANVAS_HEIGHT,
+      scale: {
+        parent,
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: width || DEFAULT_CANVAS_WIDTH,
+        height: height || DEFAULT_CANVAS_HEIGHT,
+      },      
       renderer: Phaser.AUTO,
       clearBeforeRender: false,
-      parent,
     });
   }
 
