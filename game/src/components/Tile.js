@@ -32,18 +32,26 @@ const TINT_COLORS = {
 };
 
 class Tile extends Phaser.GameObjects.Container {
+  /**
+   * Creates the custom container class
+   *
+   * @param {object} config
+   */
   constructor(config) {
     const { scene, x, y, id } = config;
     super(scene, x, y);
     this.scene.add.existing(this);
 
-    this.initHelpers(config);
     this.createSprite();
     this.createText();
+    this.initHelpers(config);
   }
 
+  /**
+   * Initializes the local helper variables
+   */
   initHelpers({ id, position }) {
-    this.id = id;
+    this.setId(id);
     this.pos = position;
   }
 
@@ -62,6 +70,7 @@ class Tile extends Phaser.GameObjects.Container {
   }
 
   setId(id) {
+    this.id = id;
     this.sprite.tint = TINT_COLORS[id];
     this.text.text = id;
   }

@@ -34,7 +34,7 @@ class Game extends Scene {
    */
   create() {
     this.fieldArray = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-    this.tileSprites = this.add.group();
+    this.tiles = this.add.container();
     this.canMove = false;
 
     // listeners for WASD keys
@@ -76,7 +76,7 @@ class Game extends Scene {
     });
     
     // adding container to the group
-    this.tileSprites.add(tile);
+    this.tiles.add(tile);
     
     // creation of a new tween for the tile sprite
     const fadeIn = this.tweens.add({
@@ -100,60 +100,12 @@ class Game extends Scene {
    */
   updateNumbers() {
     // look how I loop through all tiles
-    this.tileSprites.getChildren().forEach((item) => {
+    this.tiles.getAll().forEach((item) => {
       // retrieving the proper value to show
       const value = this.fieldArray[item.pos];
       // showing the value
       item.setId(value);
     }); 
-  }
-
-  /**
-   * Execute the move to the left
-   */
-  moveLeft() {
-    // Is the player allowed to move?
-    if (!this.canMove) return;
-    // the player can move, let's set "canMove" to false to prevent moving again until the move process is done
-    this.canMove = false;
-    // keeping track if the player moved, i.e. if it's a legal move
-    let moved = false;
-
-    // looping through each element in the group
-    this.tileSprites.getChildren().forEach((item) => {
-      // getting row and column starting from a one-dimensional array
-      const row = toRow(item.pos);
-      const col = toCol(item.pos);
-      let i;
-
-      // checking if we aren't already on the leftmost column (the tile can't move)
-      if ( col <= 0) return;
-      // setting a "remove" flag to false. Sometimes you have to remove tiles, when two merge into one 
-      let remove = false;
-      // looping from column position back to the leftmost column
-      for (i = col - 1; i >= 0; i -= 1) {
-        // if we find a tile which is not empty, our search is about to end...
-        if (this.fieldArray[row * 4 + i] !== 0) {
-          // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
-          if (this.fieldArray[row * 4 + i] === this.fieldArray[row * 4 + col]) {
-            // in this case the current tile will be removed
-            remove = true;
-            i -= 1;                                             
-          }
-          break;
-        }
-      }
-
-      // if we can actually move...
-      if (col !== i + 1) {
-        // set moved to true
-       moved=true;
-       // moving the tile "item" from row*4+col to row*4+i+1 and (if allowed) remove it
-       this.moveTile(item, row * 4 + col, row * 4 + i + 1, remove);
-      }
-    });
-    // completing the move
-    this.endMove(moved);
   }
 
   /** 
@@ -201,100 +153,153 @@ class Game extends Scene {
     }
   }
 
-    /**
-     * Moves the tile up
-     */
-    moveUp(){
-      if (!this.canMove) return;
-      this.canMove = false;
-      let moved = false;
-      this.tileSprites.getChildren().forEach((item) => {
-        const row = toRow(item.pos);
-        const col = toCol(item.pos);
-        let i;
+  /**
+   * Execute the move to the left
+   */
+  moveLeft() {
+    // Is the player allowed to move?
+    if (!this.canMove) return;
+    // the player can move, let's set "canMove" to false to prevent moving again until the move process is done
+    this.canMove = false;
+    // keeping track if the player moved, i.e. if it's a legal move
+    let moved = false;
 
-        if (row <= 0) return;
-        let remove = false;
-        for (i = row - 1; i >= 0; i-= 1) {
-          if (this.fieldArray[i * 4 + col] !== 0) {
-            if (this.fieldArray[i*4+col] === this.fieldArray[row * 4 + col]) {
-              remove = true;
-              i--;                                             
-            }
-            break
+    this.tiles.sort('x');
+    // looping through each element in the group
+    this.tiles.getAll().forEach((item) => {
+      // getting row and column starting from a one-dimensional array
+      const row = toRow(item.pos);
+      const col = toCol(item.pos);
+      let i;
+
+      // checking if we aren't already on the leftmost column (the tile can't move)
+      if ( col <= 0) return;
+      // setting a "remove" flag to false. Sometimes you have to remove tiles, when two merge into one 
+      let remove = false;
+      // looping from column position back to the leftmost column
+      for (i = col - 1; i >= 0; i -= 1) {
+        // if we find a tile which is not empty, our search is about to end...
+        if (this.fieldArray[row * 4 + i] !== 0) {
+          // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
+          if (this.fieldArray[row * 4 + i] === this.fieldArray[row * 4 + col]) {
+            // in this case the current tile will be removed
+            remove = true;
+            i -= 1;                                             
           }
+          break;
         }
+      }
 
-        if (row !== i + 1) {
-         moved = true;
-         this.moveTile(item, row * 4 + col, (i+1) * 4 + col, remove);
-        }
-      });
-      // completes the move
-      this.endMove(moved);
-    }
+      // if we can actually move...
+      if (col !== i + 1) {
+        // set moved to true
+       moved=true;
+       // moving the tile "item" from row*4+col to row*4+i+1 and (if allowed) remove it
+       this.moveTile(item, row * 4 + col, row * 4 + i + 1, remove);
+      }
+    });
+    // completing the move
+    this.endMove(moved);
+  }
 
-    /**
-     * Executes the move right
-     */
-    moveRight() {
-      if (!this.canMove) return;
-      this.canMove = false;
-      let moved = false;
-      this.tileSprites.getChildren().forEach((item) => {
-        const row = toRow(item.pos);
-        const col = toCol(item.pos);
-        let i;
-        if (col >= 3) return;
-        let remove = false;
+  /**
+   * Moves the tile up
+   */
+  moveUp(){
+    if (!this.canMove) return;
+    this.canMove = false;
+    let moved = false;
 
-        for (i = col + 1; i <= 3; i+=1) {
-          if (this.fieldArray[row * 4 + i] !== 0) {
-            if (this.fieldArray[row * 4 + i] === this.fieldArray[row * 4 + col]){
-              remove = true;
-              i += 1;
-            }
-            break
+    this.tiles.sort('y');
+    this.tiles.getAll().forEach((item) => {
+      const row = toRow(item.pos);
+      const col = toCol(item.pos);
+      let i;
+
+      if (row <= 0) return;
+      let remove = false;
+      for (i = row - 1; i >= 0; i-= 1) {
+        if (this.fieldArray[i * 4 + col] !== 0) {
+          if (this.fieldArray[i*4+col] === this.fieldArray[row * 4 + col]) {
+            remove = true;
+            i--;                                             
           }
+          break
         }
-        if (col !== i - 1 ) {
-          moved = true;
-          this.moveTile(item, row * 4 + col, row * 4 + i - 1, remove);
-        }
-      });
+      }
 
-      this.endMove(moved);
-    }
+      if (row !== i + 1) {
+       moved = true;
+       this.moveTile(item, row * 4 + col, (i+1) * 4 + col, remove);
+      }
+    });
+    // completes the move
+    this.endMove(moved);
+  }
 
-    /**
-     * Executes the move down
-     */
-    moveDown() {
-      if (!this.canMove) return;
-      this.canMove = false;
-      let moved = false;
-      this.tileSprites.getChildren().forEach((item) => {
-        const row = toRow(item.pos);
-        const col = toCol(item.pos);
-        let i;
-        if (row >= 3) return;
-        let remove = false;
-        for (i = row + 1; i <=3; i+= 1) {
-          if (this.fieldArray[i * 4 + col] !== 0) {
-            if (this.fieldArray[i * 4 + col] === this.fieldArray[row * 4 + col]) {
-              remove = true;
-              i++;                                             
-            }
-            break
+  /**
+   * Executes the move right
+   */
+  moveRight() {
+    if (!this.canMove) return;
+    this.canMove = false;
+    let moved = false;
+    this.tiles.sort('x');
+    this.tiles.getAll().reverse().forEach((item) => {
+      const row = toRow(item.pos);
+      const col = toCol(item.pos);
+      let i;
+      if (col >= 3) return;
+      let remove = false;
+
+      for (i = col + 1; i <= 3; i+=1) {
+        if (this.fieldArray[row * 4 + i] !== 0) {
+          if (this.fieldArray[row * 4 + i] === this.fieldArray[row * 4 + col]){
+            remove = true;
+            i += 1;
           }
+          break
         }
-        if (row !== i - 1) {
-          moved = true;
-          this.moveTile(item, row * 4 + col, (i - 1) * 4 + col, remove);
+      }
+      if (col !== i - 1 ) {
+        moved = true;
+        this.moveTile(item, row * 4 + col, row * 4 + i - 1, remove);
+      }
+    });
+
+    this.endMove(moved);
+  }
+
+  /**
+   * Executes the move down
+   */
+  moveDown() {
+    if (!this.canMove) return;
+    this.canMove = false;
+    let moved = false;
+    this.tiles.sort('y');
+    this.tiles.getAll().reverse().forEach((item) => {
+      const row = toRow(item.pos);
+      const col = toCol(item.pos);
+      let i;
+      if (row >= 3) return;
+      let remove = false;
+      for (i = row + 1; i <=3; i+= 1) {
+        if (this.fieldArray[i * 4 + col] !== 0) {
+          if (this.fieldArray[i * 4 + col] === this.fieldArray[row * 4 + col]) {
+            remove = true;
+            i++;                                             
+          }
+          break
         }
-      });
-      this.endMove(moved);
-    }
+      }
+      if (row !== i - 1) {
+        moved = true;
+        this.moveTile(item, row * 4 + col, (i - 1) * 4 + col, remove);
+      }
+    });
+    this.endMove(moved);
+  }
 }
 
 export default Game;
