@@ -5,7 +5,7 @@ import Phaser from 'phaser';
  *
  * @type {number}
  */
-export const TILE_SIZE = 100;
+export const TILE_SIZE = 150;
 
 /**
  * Rainbow table of color codes for tinting the tiles
@@ -58,13 +58,14 @@ class Tile extends Phaser.GameObjects.Container {
   createSprite() {
     // creation of a new sprite with "tile" instance, that is "tile.png" we loaded before
     this.sprite = this.scene.add.sprite(0, 0, 'tile');
+    this.sprite.setScale(TILE_SIZE / this.sprite.width, TILE_SIZE / this.sprite.height);
     this.sprite.setOrigin(0);
     this.add(this.sprite);
   }
 
   createText() {
     // creation of a text which will represent the value of the tile
-    this.text = this.scene.add.text(TILE_SIZE / 2, TILE_SIZE / 2, '2', { font: 'bold 16px Arial', color: '#000', align: 'center' });
+    this.text = this.scene.add.text(TILE_SIZE / 2, TILE_SIZE / 2, '2', { font: 'bold 40px Arial', color: '#000', align: 'center' });
     this.text.setOrigin(0.5);
     this.add(this.text);
   }

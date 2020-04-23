@@ -33,23 +33,51 @@ class Game extends Scene {
    * Creates the scene
    */
   create() {
+    this.emitter = new Phaser.Events.EventEmitter();
     this.fieldArray = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
     this.tiles = this.add.container();
     this.canMove = false;
 
     // listeners for WASD keys
-    const upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    const upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
     upKey.on('down', this.moveUp.bind(this));
-    const downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    const downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
     downKey.on('down', this.moveDown.bind(this));
-    const leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    const leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
     leftKey.on('down', this.moveLeft.bind(this));
-    const rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    const rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
     rightKey.on('down', this.moveRight.bind(this));
+
+    // swipe logic
+    this.input.on('pointerup', this.onSwipe, this);
     
     // at the beginning of the game we add two "2"
     this.addTwo();
     this.addTwo();
+  }
+
+  /**
+   * Invoked on Pointer up and executes the logic to
+   * imitate swipe interaction
+   *
+   * @param {object} e
+   */
+  onSwipe(e) {
+    const swipeTime = e.upTime - e.downTime;
+    const swipe = new Phaser.Geom.Point(e.upX - e.downX, e.upY - e.downY);
+    const swipeMagnitude = Phaser.Geom.Point.GetMagnitude(swipe);
+    const swipeNormal = new Phaser.Geom.Point(swipe.x / swipeMagnitude, swipe.y / swipeMagnitude);
+    if (swipeMagnitude > 20 && swipeTime < 1000 && (Math.abs(swipeNormal.y) > 0.8 || Math.abs(swipeNormal.x) > 0.8)) {
+      if(swipeNormal.x > 0.8) {
+          this.moveRight();
+      } else if (swipeNormal.x < -0.8) {
+          this.moveLeft();
+      } else if (swipeNormal.y > 0.8) {
+          this.moveDown();
+      } else if (swipeNormal.y < -0.8) {
+          this.moveUp();
+      }
+    }
   }
 
   // A NEW "2" IS ADDED TO THE GAME
@@ -139,7 +167,7 @@ class Game extends Scene {
     // then we create a tween
     const movement = this.tweens.add({
       targets: [tile],
-      duration: 150,
+      duration: 100,
       x: TILE_SIZE * (toCol(to)),
       y: TILE_SIZE * (toRow(to)),
       onComplete: () => {
@@ -149,7 +177,8 @@ class Game extends Scene {
 
     if (remove) {
       // if the tile has to be removed, it means the destination tile must be multiplied by 2
-      this.fieldArray[to] *= 2;
+      this.onMerge(from, to, tile);
+      this.emitter.emit('tile/merge', from, to, tile);
     }
   }
 
@@ -299,6 +328,19 @@ class Game extends Scene {
       }
     });
     this.endMove(moved);
+  }
+
+  /**
+   * Invoked when two tiles are merged together. It must return
+   * the id of the result from the merge
+   *
+   * @param {number} from
+   * @param {number} to
+   * @param {object} tile
+   * @returns {}
+   */
+  onMerge(from, to, tile) {
+    this.fieldArray[to] *= 2;
   }
 }
 

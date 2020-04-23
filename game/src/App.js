@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import Game from './scenes/Game';
 
-const DEFAULT_CANVAS_WIDTH = 1280;
-const DEFAULT_CANVAS_HEIGHT = 720;
+const DEFAULT_CANVAS_WIDTH = 720;
+const DEFAULT_CANVAS_HEIGHT = 1280;
 
 class App {
   /**
