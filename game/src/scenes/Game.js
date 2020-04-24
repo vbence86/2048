@@ -33,17 +33,36 @@ class Game extends Scene {
    * Creates the scene
    */
   create() {
-    this.emitter = new Phaser.Events.EventEmitter();
-    this.fieldArray = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-    
+    this.initTileContainer();
+    this.initInputListeners();
+    this.initGameEventListeners();
+    this.startGame();
+  }
+
+  /**
+   * Sets up the 2048 tiles and related helper variables
+   */
+  initTileContainer() {
     const tilesPadding = 50;
     this.tiles = this.add.container();
     this.tiles.x = tilesPadding / 2;
     this.tileSize = Math.min((this.sys.canvas.width - tilesPadding) / 4, (this.sys.canvas.height - tilesPadding) / 4 / 2);
-    
+    this.fieldArray = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
     this.canMove = false;
+  }
 
-    // listeners for WASD keys
+  /**
+   * Sets up the listeners against game events
+   */
+  initGameEventListeners() {
+    this.emitter = new Phaser.Events.EventEmitter();    
+  }
+
+  /**
+   * Sets up the listeners against user interactions
+   */
+  initInputListeners() {
+    // listeners for arrow keys
     const upKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
     upKey.on('down', this.moveUp.bind(this));
     const downKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
@@ -55,10 +74,6 @@ class Game extends Scene {
 
     // swipe logic
     this.input.on('pointerup', this.onSwipe, this);
-    
-    // at the beginning of the game we add two "2"
-    this.addTwo();
-    this.addTwo();
   }
 
   /**
@@ -85,9 +100,21 @@ class Game extends Scene {
     }
   }
 
-  // A NEW "2" IS ADDED TO THE GAME
-  addTwo() {
-    const id = 2;
+  /**
+   * Kicks off the gameplay
+   */
+  startGame() {
+    // at the beginning of the game we add two "2"
+    this.addNewTile(2);
+    this.addNewTile(2);
+  }
+
+  /**
+   * Adds a new tile component to the tile matrix
+   *
+   * @param {number} id 
+   */
+  addNewTile(id) {
     let position;
     // choosing an empty tile in the field
     do {
@@ -149,8 +176,7 @@ class Game extends Scene {
   endMove(hasMoved) {
     // if we move the tile...
     if (hasMoved) {
-      // add another "2"
-      this.addTwo();
+      this.addNewTile(2);
     } else {
       // otherwise just let the player be able to move again
       this.canMove = true;
