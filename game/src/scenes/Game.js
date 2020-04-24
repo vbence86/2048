@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import Scene from './Scene';
-import Tile, { TILE_SIZE } from '../components/Tile';
+import Tile from '../components/Tile';
 
 // resources
 import tileImg from "../assets/tile.png";
@@ -35,7 +35,12 @@ class Game extends Scene {
   create() {
     this.emitter = new Phaser.Events.EventEmitter();
     this.fieldArray = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+    
+    const tilesPadding = 50;
     this.tiles = this.add.container();
+    this.tiles.x = tilesPadding / 2;
+    this.tileSize = Math.min((this.sys.canvas.width - tilesPadding) / 4, (this.sys.canvas.height - tilesPadding) / 4 / 2);
+    
     this.canMove = false;
 
     // listeners for WASD keys
@@ -93,10 +98,11 @@ class Game extends Scene {
     this.fieldArray[position] = id;
 
     // containter object
-    const x = toCol(position) * TILE_SIZE; 
-    const y = toRow(position) * TILE_SIZE;
+    const x = toCol(position) * this.tileSize; 
+    const y = toRow(position) * this.tileSize;
     const tile = new Tile({
       scene: this, 
+      tileSize: this.tileSize,
       x,
       y,
       id,
@@ -168,8 +174,8 @@ class Game extends Scene {
     const movement = this.tweens.add({
       targets: [tile],
       duration: 100,
-      x: TILE_SIZE * (toCol(to)),
-      y: TILE_SIZE * (toRow(to)),
+      x: this.tileSize * (toCol(to)),
+      y: this.tileSize * (toRow(to)),
       onComplete: () => {
         if (remove) tile.destroy();
       },

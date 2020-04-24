@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import Game from './scenes/Game';
-
-const DEFAULT_CANVAS_WIDTH = 720;
-const DEFAULT_CANVAS_HEIGHT = 1280;
+import {
+  DEVICE_WIDTH,
+  DEVICE_HEIGHT,
+} from './utils/Const';
 
 class App {
   /**
@@ -25,8 +26,8 @@ class App {
         parent,
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: width || DEFAULT_CANVAS_WIDTH,
-        height: height || DEFAULT_CANVAS_HEIGHT,
+        width: width || DEVICE_WIDTH,
+        height: height || DEVICE_HEIGHT,
       },      
       renderer: Phaser.AUTO,
       clearBeforeRender: false,
