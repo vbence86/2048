@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import Scene from './Scene';
-import Tile, { Type, createTileModel } from '../components/Tile';
+import TileView from '../components/TileView';
+import TileModel from '../logic/TileModel';
 
 // resources
 import tileImg from "../assets/tile.png";
@@ -30,7 +31,7 @@ const toCol = n => n % 4;
 const getFieldArray = () => {
   const arr = [];
   for (let i = 0; i < 16; i += 1) {
-    arr.push(createTileModel(Type.Empty));
+    arr.push(TileModel.createEmpty());
   }
   return arr;
 };
@@ -120,34 +121,34 @@ class Game extends Scene {
    */
   startGame() {
     // at the beginning of the game we add two "2"
-    this.addNewTile({ id: Type.Number, value: 2 });
-    this.addNewTile({ id: Type.Number, value: 2 });
+    this.addNewTile(TileModel.create(TileModel.Type.Number));
+    this.addNewTile(TileModel.create(TileModel.Type.Number));
   }
 
   /**
    * Adds a new tile component to the tile matrix
    *
-   * @param {object} config 
+   * @param {object} model 
    */
-  addNewTile(config) {
+  addNewTile(model) {
     let position;
     // choosing an empty tile in the field
     do {
       position = Math.floor(Math.random() * 16);
-    } while (this.fieldArray[position].id !== Type.Empty);
+    } while (!this.fieldArray[position].isEmpty());
 
-    this.fieldArray[position] = config;
+    this.fieldArray[position] = model;
 
     // containter object
     const x = toCol(position) * this.tileSize; 
     const y = toRow(position) * this.tileSize;
-    const tile = new Tile({
+    const tile = new TileView({
       scene: this, 
       tileSize: this.tileSize,
       x,
       y,
       position,
-      ...config,
+      model,
     });
     
     // adding container to the group
@@ -163,7 +164,7 @@ class Game extends Scene {
       },
       onComplete: () => {
         // updating tile numbers. This is not necessary the 1st time, anyway
-        this.updateNumbers();
+        this.updateTiles();
         // now I can move
         this.canMove = true;
       },
@@ -173,10 +174,10 @@ class Game extends Scene {
   /**
    * Loops through all the tiles and updates them
    */
-  updateNumbers() {
+  updateTiles() {
     this.tiles.getAll().forEach((item) => {
-      const config = this.fieldArray[item.pos];
-      item.setTo(config);
+      const model = this.fieldArray[item.pos];
+      item.bind(model);
     }); 
   }
 
@@ -187,7 +188,7 @@ class Game extends Scene {
   endMove(hasMoved) {
     // if we move the tile...
     if (hasMoved) {
-      this.addNewTile(createTileModel(Type.Number));
+      this.addNewTile(TileModel.create(TileModel.Type.Number));
     } else {
       // otherwise just let the player be able to move again
       this.canMove = true;
@@ -204,7 +205,7 @@ class Game extends Scene {
   moveTile(tile, from, to, remove) {
     // first, we update the array with new values
     this.fieldArray[to] = this.fieldArray[from];
-    this.fieldArray[from] = createTileModel(Type.Empty);
+    this.fieldArray[from] = TileModel.createEmpty();
     tile.pos = to;
 
     // then we create a tween
@@ -252,11 +253,12 @@ class Game extends Scene {
       for (i = col - 1; i >= 0; i -= 1) {
         const pos = row * 4 + i;
         const targetPos = row * 4 + col;
+        const actual = this.fieldArray[pos];
+        const target = this.fieldArray[targetPos];
         // if we find a tile which is not empty, our search is about to end...
-        if (this.fieldArray[pos].id !== Type.Empty) {
+        if (!actual.isEmpty()) {
           // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
-          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
-             && this.fieldArray[pos].value === this.fieldArray[targetPos].value) {
+          if (actual.canMergeWith(target)) {
             // in this case the current tile will be removed
             remove = true;
             i -= 1;                                             
@@ -296,13 +298,17 @@ class Game extends Scene {
       for (i = row - 1; i >= 0; i-= 1) {
         const pos = i * 4 + col;
         const targetPos = row * 4 + col;
-        if (this.fieldArray[pos].id !== Type.Empty) {
-          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
-              && this.fieldArray[pos].value === this.fieldArray[targetPos].value) {
+        const actual = this.fieldArray[pos];
+        const target = this.fieldArray[targetPos];
+        // if we find a tile which is not empty, our search is about to end...
+        if (!actual.isEmpty()) {
+          // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
+          if (actual.canMergeWith(target)) {
+            // in this case the current tile will be removed
             remove = true;
-            i--;                                             
+            i -= 1;                                             
           }
-          break
+          break;
         }
       }
 
@@ -333,13 +339,17 @@ class Game extends Scene {
       for (i = col + 1; i <= 3; i+=1) {
         const pos = row * 4 + i;
         const targetPos = row * 4 + col;
-        if (this.fieldArray[pos].id !== Type.Empty) {
-          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
-             && this.fieldArray[pos].value === this.fieldArray[targetPos].value){
+        const actual = this.fieldArray[pos];
+        const target = this.fieldArray[targetPos];
+        // if we find a tile which is not empty, our search is about to end...
+        if (!actual.isEmpty()) {
+          // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
+          if (actual.canMergeWith(target)) {
+            // in this case the current tile will be removed
             remove = true;
-            i += 1;
+            i += 1;                                             
           }
-          break
+          break;
         }
       }
       if (col !== i - 1 ) {
@@ -368,13 +378,17 @@ class Game extends Scene {
       for (i = row + 1; i <=3; i+= 1) {
         const pos = i * 4 + col;
         const targetPos = row * 4 + col;
-        if (this.fieldArray[pos].id !== Type.Empty) {
-          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
-              && this.fieldArray[pos].value === this.fieldArray[targetPos].value) {
+        const actual = this.fieldArray[pos];
+        const target = this.fieldArray[targetPos];
+        // if we find a tile which is not empty, our search is about to end...
+        if (!actual.isEmpty()) {
+          // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
+          if (actual.canMergeWith(target)) {
+            // in this case the current tile will be removed
             remove = true;
-            i++;                                             
+            i += 1;                                             
           }
-          break
+          break;
         }
       }
       if (row !== i - 1) {
@@ -395,7 +409,9 @@ class Game extends Scene {
    * @returns {}
    */
   onMerge(from, to, tile) {
-    this.fieldArray[to].value *= 2;
+    const targetModel = this.fieldArray[to];
+    const fromModel = this.fieldArray[from];
+    targetModel.mergeFrom(fromModel);
   }
 }
 

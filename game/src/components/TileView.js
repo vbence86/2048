@@ -1,40 +1,5 @@
 import Phaser from 'phaser';
-
-/**
- * @type {object}
- */
-export const Type = {
-  Empty: 'empty',
-  Brick: 'brick',
-  Number: 'number',
-};
-
-/**
- * @type {object}
- */
-export const TileModels = {
-  [Type.Empty]: {
-    id: Type.Empty,
-    value: 0,
-  },
-  [Type.Brick]: {
-    id: Type.Brick,
-    value: 0,
-    movable: true,
-  },
-  [Type.Number]: {
-    id: Type.Number,
-    value: 2,
-  },
-}
-
-/**
- * Returns a new model object by the given id
- *
- * @param {string} id
- * @returns {object}
- */
-export const createTileModel = id => ({ ...TileModels[id] })
+import TileModel from '../logic/TileModel';
 
 /**
  * Rainbow table of color codes for tinting the tiles
@@ -66,23 +31,23 @@ const TINT_COLORS = {
  * @type {object}
  */
 const SPRITES = {
-  [Type.Brick]: 'bricks',
-  [Type.Number]: 'tile',
+  [TileModel.Type.Brick]: 'bricks',
+  [TileModel.Type.Number]: 'tile',
 };
 
-class Tile extends Phaser.GameObjects.Container {
+class TileView extends Phaser.GameObjects.Container {
   /**
    * Creates the custom container class
    *
    * @param {object} config
    */
   constructor(config) {
-    const { scene, x, y, id, value } = config;
+    const { scene, x, y, model } = config;
     super(scene, x, y);
     this.scene.add.existing(this);
 
     this.initHelpers(config);
-    this.setTo(config);
+    this.bind(model);
   }
 
   /**
@@ -98,9 +63,12 @@ class Tile extends Phaser.GameObjects.Container {
   /**
    * Sets the id and creates the corresponding sprite element
    *
-   * @param {object} config - { id: string, value: number }
+   * @param {object} model - TileModel instance
    */
-  setTo({ id, value }) {
+  bind(model) {
+    const id = model.getId();
+    const value = model.getValue();
+
     this.updateSprite(id);
     this.updateText(value);
     this.updateEffects(id, value);
@@ -163,4 +131,4 @@ class Tile extends Phaser.GameObjects.Container {
   }
 }
 
-export default Tile;
+export default TileView;
