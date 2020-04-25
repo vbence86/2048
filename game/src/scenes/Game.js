@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import Scene from './Scene';
-import Tile from '../components/Tile';
+import Tile, { Type, createTileModel } from '../components/Tile';
 
 // resources
 import tileImg from "../assets/tile.png";
+import bricksImg from "../assets/bricks.jpg";
 
 /**
  * Return the index of the row by the given index
@@ -21,12 +22,26 @@ const toRow = n => Math.floor(n / 4);
  */
 const toCol = n => n % 4;
 
+/**
+ * Returns an array populated with valid field objects
+ *
+ * @returns {array}
+ */
+const getFieldArray = () => {
+  const arr = [];
+  for (let i = 0; i < 16; i += 1) {
+    arr.push(createTileModel(Type.Empty));
+  }
+  return arr;
+};
+
 class Game extends Scene {
   /**
    * Preload state
    */
   preload() {
     this.load.image('tile', tileImg);
+    this.load.image('bricks', bricksImg);
   }
 
   /**
@@ -47,7 +62,7 @@ class Game extends Scene {
     this.tiles = this.add.container();
     this.tiles.x = tilesPadding / 2;
     this.tileSize = Math.min((this.sys.canvas.width - tilesPadding) / 4, (this.sys.canvas.height - tilesPadding) / 4 / 2);
-    this.fieldArray = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+    this.fieldArray = getFieldArray();
     this.canMove = false;
   }
 
@@ -105,24 +120,23 @@ class Game extends Scene {
    */
   startGame() {
     // at the beginning of the game we add two "2"
-    this.addNewTile(2);
-    this.addNewTile(2);
+    this.addNewTile({ id: Type.Number, value: 2 });
+    this.addNewTile({ id: Type.Number, value: 2 });
   }
 
   /**
    * Adds a new tile component to the tile matrix
    *
-   * @param {number} id 
+   * @param {object} config 
    */
-  addNewTile(id) {
+  addNewTile(config) {
     let position;
     // choosing an empty tile in the field
     do {
       position = Math.floor(Math.random() * 16);
-    } while (this.fieldArray[position] != 0);
+    } while (this.fieldArray[position].id !== Type.Empty);
 
-    // such empty tile now takes "2" value
-    this.fieldArray[position] = id;
+    this.fieldArray[position] = config;
 
     // containter object
     const x = toCol(position) * this.tileSize; 
@@ -132,8 +146,8 @@ class Game extends Scene {
       tileSize: this.tileSize,
       x,
       y,
-      id,
       position,
+      ...config,
     });
     
     // adding container to the group
@@ -160,12 +174,9 @@ class Game extends Scene {
    * Loops through all the tiles and updates them
    */
   updateNumbers() {
-    // look how I loop through all tiles
     this.tiles.getAll().forEach((item) => {
-      // retrieving the proper value to show
-      const value = this.fieldArray[item.pos];
-      // showing the value
-      item.setId(value);
+      const config = this.fieldArray[item.pos];
+      item.setTo(config);
     }); 
   }
 
@@ -176,7 +187,7 @@ class Game extends Scene {
   endMove(hasMoved) {
     // if we move the tile...
     if (hasMoved) {
-      this.addNewTile(2);
+      this.addNewTile(createTileModel(Type.Number));
     } else {
       // otherwise just let the player be able to move again
       this.canMove = true;
@@ -193,7 +204,7 @@ class Game extends Scene {
   moveTile(tile, from, to, remove) {
     // first, we update the array with new values
     this.fieldArray[to] = this.fieldArray[from];
-    this.fieldArray[from] = 0;
+    this.fieldArray[from] = createTileModel(Type.Empty);
     tile.pos = to;
 
     // then we create a tween
@@ -239,10 +250,13 @@ class Game extends Scene {
       let remove = false;
       // looping from column position back to the leftmost column
       for (i = col - 1; i >= 0; i -= 1) {
+        const pos = row * 4 + i;
+        const targetPos = row * 4 + col;
         // if we find a tile which is not empty, our search is about to end...
-        if (this.fieldArray[row * 4 + i] !== 0) {
+        if (this.fieldArray[pos].id !== Type.Empty) {
           // ...we just have to see if the tile we are landing on has the same value of the tile we are moving
-          if (this.fieldArray[row * 4 + i] === this.fieldArray[row * 4 + col]) {
+          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
+             && this.fieldArray[pos].value === this.fieldArray[targetPos].value) {
             // in this case the current tile will be removed
             remove = true;
             i -= 1;                                             
@@ -254,7 +268,7 @@ class Game extends Scene {
       // if we can actually move...
       if (col !== i + 1) {
         // set moved to true
-       moved=true;
+       moved = true;
        // moving the tile "item" from row*4+col to row*4+i+1 and (if allowed) remove it
        this.moveTile(item, row * 4 + col, row * 4 + i + 1, remove);
       }
@@ -280,8 +294,11 @@ class Game extends Scene {
       if (row <= 0) return;
       let remove = false;
       for (i = row - 1; i >= 0; i-= 1) {
-        if (this.fieldArray[i * 4 + col] !== 0) {
-          if (this.fieldArray[i*4+col] === this.fieldArray[row * 4 + col]) {
+        const pos = i * 4 + col;
+        const targetPos = row * 4 + col;
+        if (this.fieldArray[pos].id !== Type.Empty) {
+          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
+              && this.fieldArray[pos].value === this.fieldArray[targetPos].value) {
             remove = true;
             i--;                                             
           }
@@ -314,8 +331,11 @@ class Game extends Scene {
       let remove = false;
 
       for (i = col + 1; i <= 3; i+=1) {
-        if (this.fieldArray[row * 4 + i] !== 0) {
-          if (this.fieldArray[row * 4 + i] === this.fieldArray[row * 4 + col]){
+        const pos = row * 4 + i;
+        const targetPos = row * 4 + col;
+        if (this.fieldArray[pos].id !== Type.Empty) {
+          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
+             && this.fieldArray[pos].value === this.fieldArray[targetPos].value){
             remove = true;
             i += 1;
           }
@@ -346,8 +366,11 @@ class Game extends Scene {
       if (row >= 3) return;
       let remove = false;
       for (i = row + 1; i <=3; i+= 1) {
-        if (this.fieldArray[i * 4 + col] !== 0) {
-          if (this.fieldArray[i * 4 + col] === this.fieldArray[row * 4 + col]) {
+        const pos = i * 4 + col;
+        const targetPos = row * 4 + col;
+        if (this.fieldArray[pos].id !== Type.Empty) {
+          if (this.fieldArray[pos].id === this.fieldArray[targetPos].id
+              && this.fieldArray[pos].value === this.fieldArray[targetPos].value) {
             remove = true;
             i++;                                             
           }
@@ -372,7 +395,7 @@ class Game extends Scene {
    * @returns {}
    */
   onMerge(from, to, tile) {
-    this.fieldArray[to] *= 2;
+    this.fieldArray[to].value *= 2;
   }
 }
 
