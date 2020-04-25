@@ -7,6 +7,7 @@ const Type = {
   Empty: 'empty',
   Brick: 'brick',
   Number: 'number',
+  Bomb: 'bomb',
 };
 
 /**
@@ -26,6 +27,22 @@ const DataSource = {
     id: Type.Number,
     value: 2,
   },
+  [Type.Bomb]: {
+    id: Type.Bomb,
+    value: 0,
+  }
+}
+
+/**
+ * Returns true if the given models are typeA and typeB
+ * regardless of the order
+ *
+ * @returns {boolean}
+ */
+const combinationOf = (modelA, modelB, typeA, typeB) => {
+  if (modelA.getId() === typeA && modelB.getId() === typeB) return true;
+  if (modelA.getId() === typeB && modelB.getId() === typeA) return true;
+  return false;
 }
 
 /**
@@ -56,9 +73,14 @@ class TileModel {
   /**
    * Merges the model from the given model
    *
-   * @param {object} model
+   * @param {number} id
    */
-  mergeFrom(model) {
+  mergeFrom(id) {
+    if (this.getId() === Type.Bomb && id === Type.Brick) {
+      this.data = { ...DataSource[Type.Empty] };
+      return;
+    }
+
     this.data.value *= 2;
   }
 
@@ -86,6 +108,13 @@ class TileModel {
    * @returns {boolean}
    */
   canMergeWith(tileModel) {
+    // Bomb can merge with Brick
+    if (combinationOf(this, tileModel, Type.Brick, Type.Bomb)) return true;
+
+    // Bombs cannot merge with one another
+    if (combinationOf(this, tileModel, Type.Bomb, Type.Bomb)) return false;
+
+    // only the same kind can merge
     if (tileModel.getId() !== this.getId()) return false;
     if (tileModel.getValue() !== this.getValue()) return false;
     return true;

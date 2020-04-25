@@ -33,6 +33,7 @@ const TINT_COLORS = {
 const SPRITES = {
   [TileModel.Type.Brick]: 'bricks',
   [TileModel.Type.Number]: 'tile',
+  [TileModel.Type.Bomb]: 'bomb',
 };
 
 class TileView extends Phaser.GameObjects.Container {
@@ -75,6 +76,7 @@ class TileView extends Phaser.GameObjects.Container {
 
     this._id = id;
     this._value = value;
+    this._model = model;
   }
 
   /**
@@ -99,6 +101,7 @@ class TileView extends Phaser.GameObjects.Container {
    * Creates the text element
    */
   updateText(label) {
+    if (!label) return;
     if (!this.text) {
       // creation of a text which will represent the value of the tile
       this.text = this.scene.add.text(this.tileSize / 2, this.tileSize / 2, label, { font: 'bold 40px Arial', color: '#000', align: 'center' });
@@ -128,6 +131,15 @@ class TileView extends Phaser.GameObjects.Container {
    */
   shouldUpdateSprite(id) {
     return id !== this._id;
+  }
+
+  /**
+   * Returns the bind model
+   *
+   * @returns {object}
+   */
+  getModel() {
+    return this._model;
   }
 }
 

@@ -6,6 +6,7 @@ import TileModel from '../logic/TileModel';
 // resources
 import tileImg from "../assets/tile.png";
 import bricksImg from "../assets/bricks.jpg";
+import bombImg from "../assets/bomb.png";
 
 /**
  * Return the index of the row by the given index
@@ -43,6 +44,7 @@ class Game extends Scene {
   preload() {
     this.load.image('tile', tileImg);
     this.load.image('bricks', bricksImg);
+    this.load.image('bomb', bombImg);
   }
 
   /**
@@ -60,8 +62,8 @@ class Game extends Scene {
    */
   initTileContainer() {
     const tilesPadding = 50;
-    this.tiles = this.add.container();
-    this.tiles.x = tilesPadding / 2;
+    this.tileViews = this.add.container();
+    this.tileViews.x = tilesPadding / 2;
     this.tileSize = Math.min((this.sys.canvas.width - tilesPadding) / 4, (this.sys.canvas.height - tilesPadding) / 4 / 2);
     this.fieldArray = getFieldArray();
     this.canMove = false;
@@ -123,6 +125,9 @@ class Game extends Scene {
     // at the beginning of the game we add two "2"
     this.addNewTile(TileModel.create(TileModel.Type.Number));
     this.addNewTile(TileModel.create(TileModel.Type.Number));
+    this.addNewTile(TileModel.create(TileModel.Type.Brick));
+    this.addNewTile(TileModel.create(TileModel.Type.Brick));
+    this.addNewTile(TileModel.create(TileModel.Type.Brick));
   }
 
   /**
@@ -152,7 +157,7 @@ class Game extends Scene {
     });
     
     // adding container to the group
-    this.tiles.add(tile);
+    this.tileViews.add(tile);
     
     // creation of a new tween for the tile sprite
     const fadeIn = this.tweens.add({
@@ -175,10 +180,16 @@ class Game extends Scene {
    * Loops through all the tiles and updates them
    */
   updateTiles() {
-    this.tiles.getAll().forEach((item) => {
+    const toDelete = [];
+    this.tileViews.getAll().forEach((item) => {
       const model = this.fieldArray[item.pos];
-      item.bind(model);
-    }); 
+      if (model.isEmpty()) {
+        toDelete.push(item);
+      } else {
+        item.bind(model);
+      }
+    });
+    toDelete.forEach(item => this.tileViews.remove(item));
   }
 
   /** 
@@ -189,6 +200,9 @@ class Game extends Scene {
     // if we move the tile...
     if (hasMoved) {
       this.addNewTile(TileModel.create(TileModel.Type.Number));
+      if (Math.random() < 0.25) {
+        this.addNewTile(TileModel.create(TileModel.Type.Bomb));
+      }
     } else {
       // otherwise just let the player be able to move again
       this.canMove = true;
@@ -203,7 +217,7 @@ class Game extends Scene {
    * @param {boolean} remove
    */
   moveTile(tile, from, to, remove) {
-    // first, we update the array with new values
+    const fromId = this.fieldArray[to].getId();
     this.fieldArray[to] = this.fieldArray[from];
     this.fieldArray[from] = TileModel.createEmpty();
     tile.pos = to;
@@ -220,8 +234,7 @@ class Game extends Scene {
     });
 
     if (remove) {
-      // if the tile has to be removed, it means the destination tile must be multiplied by 2
-      this.onMerge(from, to, tile);
+      this.onMerge(fromId, to, tile);
       this.emitter.emit('tile/merge', from, to, tile);
     }
   }
@@ -237,13 +250,17 @@ class Game extends Scene {
     // keeping track if the player moved, i.e. if it's a legal move
     let moved = false;
 
-    this.tiles.sort('x');
+    this.tileViews.sort('x');
     // looping through each element in the group
-    this.tiles.getAll().forEach((item) => {
+    this.tileViews.getAll().forEach((item) => {
       // getting row and column starting from a one-dimensional array
       const row = toRow(item.pos);
       const col = toCol(item.pos);
+      const model = item.getModel();
       let i;
+
+      // checking if the tile is movable
+      if (model.isStatic()) return;
 
       // checking if we aren't already on the leftmost column (the tile can't move)
       if ( col <= 0) return;
@@ -287,11 +304,15 @@ class Game extends Scene {
     this.canMove = false;
     let moved = false;
 
-    this.tiles.sort('y');
-    this.tiles.getAll().forEach((item) => {
+    this.tileViews.sort('y');
+    this.tileViews.getAll().forEach((item) => {
       const row = toRow(item.pos);
       const col = toCol(item.pos);
+      const model = item.getModel();
       let i;
+
+      // checking if the tile is movable
+      if (model.isStatic()) return;
 
       if (row <= 0) return;
       let remove = false;
@@ -328,11 +349,16 @@ class Game extends Scene {
     if (!this.canMove) return;
     this.canMove = false;
     let moved = false;
-    this.tiles.sort('x');
-    this.tiles.getAll().reverse().forEach((item) => {
+    this.tileViews.sort('x');
+    this.tileViews.getAll().reverse().forEach((item) => {
       const row = toRow(item.pos);
       const col = toCol(item.pos);
+      const model = item.getModel();
       let i;
+
+      // checking if the tile is movable
+      if (model.isStatic()) return;
+
       if (col >= 3) return;
       let remove = false;
 
@@ -368,13 +394,20 @@ class Game extends Scene {
     if (!this.canMove) return;
     this.canMove = false;
     let moved = false;
-    this.tiles.sort('y');
-    this.tiles.getAll().reverse().forEach((item) => {
+    this.tileViews.sort('y');
+    this.tileViews.getAll().reverse().forEach((item) => {
       const row = toRow(item.pos);
       const col = toCol(item.pos);
+      const model = item.getModel();
       let i;
+
+      // checking if the tile is movable
+      if (model.isStatic()) return;
+
       if (row >= 3) return;
+
       let remove = false;
+
       for (i = row + 1; i <=3; i+= 1) {
         const pos = i * 4 + col;
         const targetPos = row * 4 + col;
@@ -406,12 +439,10 @@ class Game extends Scene {
    * @param {number} from
    * @param {number} to
    * @param {object} tile
-   * @returns {}
    */
-  onMerge(from, to, tile) {
+  onMerge(fromId, to, tile) {
     const targetModel = this.fieldArray[to];
-    const fromModel = this.fieldArray[from];
-    targetModel.mergeFrom(fromModel);
+    targetModel.mergeFrom(fromId);
   }
 }
 
