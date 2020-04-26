@@ -5,6 +5,7 @@ import Phaser from 'phaser';
  */
 const Type = {
   Empty: 'empty',
+  Placeholder: 'placeholder',
   Brick: 'brick',
   Number: 'number',
   Bomb: 'bomb',
@@ -16,6 +17,10 @@ const Type = {
 const DataSource = {
   [Type.Empty]: {
     id: Type.Empty,
+    value: 0,
+  },
+  [Type.Placeholder]: {
+    id: Type.Placeholder,
     value: 0,
   },
   [Type.Brick]: {
@@ -77,7 +82,7 @@ class TileModel {
    */
   mergeFrom(id) {
     if (this.getId() === Type.Bomb && id === Type.Brick) {
-      this.data = { ...DataSource[Type.Empty] };
+      this.data = { ...DataSource[Type.Placeholder] };
       return;
     }
 
@@ -136,7 +141,16 @@ class TileModel {
    */
    isEmpty() {
     return this.data.id === Type.Empty;
-   }   
+   }
+
+  /**
+   * Returns true if the tile represents a placeholder element
+   *
+   * @returns {boolean}
+   */
+   isPlaceholder() {
+    return this.data.id === Type.Placeholder;
+   }    
 }
 
 TileModel.Type = Type;

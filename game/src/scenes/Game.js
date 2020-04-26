@@ -197,6 +197,13 @@ class Game extends Scene {
    * @param {boolean} hasMoved
    */
   endMove(hasMoved) {
+    // purge the matrix from placeholders
+    this.fieldArray.forEach((model, idx) => {
+      if (model.isPlaceholder()) {
+        this.fieldArray[idx] = TileModel.createEmpty();
+      }
+    });
+
     // if we move the tile...
     if (hasMoved) {
       this.addNewTile(TileModel.create(TileModel.Type.Number));
