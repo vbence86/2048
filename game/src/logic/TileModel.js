@@ -35,6 +35,12 @@ const DataSource = {
   [Type.Bomb]: {
     id: Type.Bomb,
     value: 0,
+    animations: {
+      merge: {
+        sprite: 'explosion',
+        animationId: 'explosion',
+      }
+    },
   }
 }
 
@@ -105,6 +111,15 @@ class TileModel {
    */
   getValue() {
     return this.data.value;
+  }
+
+  /**
+   * Returns the animations attached to this model
+   *
+   * @returns {object}
+   */
+  getAnimations() {
+    return this.data.animations;
   }
 
   /**

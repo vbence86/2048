@@ -7,6 +7,7 @@ import TileModel from '../logic/TileModel';
 import tileImg from "../assets/tile.png";
 import bricksImg from "../assets/bricks.jpg";
 import bombImg from "../assets/bomb.png";
+import explosionImg from "../assets/explosion.png";
 
 /**
  * Return the index of the row by the given index
@@ -45,6 +46,7 @@ class Game extends Scene {
     this.load.image('tile', tileImg);
     this.load.image('bricks', bricksImg);
     this.load.image('bomb', bombImg);
+    this.load.spritesheet('explosion', explosionImg, { frameWidth: 192, frameHeight: 192 });
   }
 
   /**
@@ -54,6 +56,7 @@ class Game extends Scene {
     this.initTileContainer();
     this.initInputListeners();
     this.initGameEventListeners();
+    this.initAnimations();
     this.startGame();
   }
 
@@ -73,7 +76,9 @@ class Game extends Scene {
    * Sets up the listeners against game events
    */
   initGameEventListeners() {
-    this.emitter = new Phaser.Events.EventEmitter();    
+    this.emitter = new Phaser.Events.EventEmitter();
+
+    this.emitter.on('tile/merge/animationcomplete', this.onMergeAnimationComplete.bind(this));
   }
 
   /**
@@ -116,6 +121,17 @@ class Game extends Scene {
           this.moveUp();
       }
     }
+  }
+
+  /**
+   * Init animations
+   */
+  initAnimations() {
+    this.anims.create({
+      key: 'explosion',
+      frames: this.anims.generateFrameNumbers('explosion'),
+      frameRate: 20,
+    });    
   }
 
   /**
@@ -177,6 +193,20 @@ class Game extends Scene {
   }
 
   /**
+   * Creates a new animating sprite based on the given configuartion param
+   *
+   * @param {object} config
+   */
+  addNewAnimation(config) {
+    const { x, y, id, animationId } = config;
+    const sprite = this.add.sprite(x, y, id);
+    sprite.setOrigin(0);
+    const animComplete = () => sprite.destroy();
+    sprite.on('animationcomplete', animComplete);
+    sprite.play(animationId || id);
+  }
+
+  /**
    * Loops through all the tiles and updates them
    */
   updateTiles() {
@@ -224,7 +254,9 @@ class Game extends Scene {
    * @param {boolean} remove
    */
   moveTile(tile, from, to, remove) {
+    const fromModel = Object.assign( Object.create( Object.getPrototypeOf(this.fieldArray[from])), this.fieldArray[from]);
     const fromId = this.fieldArray[to].getId();
+    const toId = this.fieldArray[from].getId();
     this.fieldArray[to] = this.fieldArray[from];
     this.fieldArray[from] = TileModel.createEmpty();
     tile.pos = to;
@@ -236,13 +268,15 @@ class Game extends Scene {
       x: this.tileSize * (toCol(to)),
       y: this.tileSize * (toRow(to)),
       onComplete: () => {
-        if (remove) tile.destroy();
+        if (remove) {
+          tile.destroy();
+          this.emitter.emit('tile/merge/animationcomplete', fromModel, tile, fromId, toId);
+        }
       },
     });
 
     if (remove) {
-      this.onMerge(fromId, to, tile);
-      this.emitter.emit('tile/merge', from, to, tile);
+      this.mergeTiles(fromId, to, tile);
     }
   }
 
@@ -447,9 +481,23 @@ class Game extends Scene {
    * @param {number} to
    * @param {object} tile
    */
-  onMerge(fromId, to, tile) {
+  mergeTiles(fromId, to, tile) {
     const targetModel = this.fieldArray[to];
     targetModel.mergeFrom(fromId);
+  }
+
+  /**
+   * Callback to trigger further animations 
+   */
+  onMergeAnimationComplete(model, tile, fromId, toId) {
+    const animations = model.getAnimations();
+    if (animations && animations.merge)
+    this.addNewAnimation({
+      x: tile.x,
+      y: tile.y,
+      id: animations.merge.sprite,
+      animationId: animations.merge.animationId,
+    });
   }
 }
 
