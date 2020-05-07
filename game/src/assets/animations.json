@@ -1,0 +1,207 @@
+{
+  "anims":[
+    {
+      "key":"explosion",
+      "type":"frame",
+      "frames": [
+        {
+          "key":"explosion",
+          "frame": 0,
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key":"explosion",
+          "frame": 1,
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key":"explosion",
+          "frame": 2,
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key":"explosion",
+          "frame": 3,
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key":"explosion",
+          "frame": 4,
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key":"explosion",
+          "frame": 5,
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key":"explosion",
+          "frame": 6,
+          "duration":0,
+          "visible":false
+        }
+      ],
+      "frameRate":24,
+      "skipMissedFrames":true,
+      "delay":0,
+      "repeat": 0,
+      "repeatDelay":0,
+      "yoyo":false,
+      "showOnStart":false,
+      "hideOnComplete":false
+    },
+    {
+      "key": "cat-idle",
+      "type":"frame",
+      "frames": [
+        {
+          "key": "cat",
+          "frame": "Idle (1).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (2).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (3).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (4).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (5).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (6).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (7).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (8).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (9).png",
+          "duration":0,
+          "visible":false
+
+        },
+        {
+          "key": "cat",
+          "frame": "Idle (10).png",
+          "duration":0,
+          "visible":false
+
+        }
+      ],
+      "frameRate": 20,
+      "skipMissedFrames":true,
+      "delay":0,
+      "repeat": -1,
+      "repeatDelay":0,
+      "yoyo":false,
+      "showOnStart":false,
+      "hideOnComplete":false
+    },
+    {
+      "key": "cat-merge",
+      "type":"frame",
+      "frames": [
+        {
+          "key": "cat",
+          "frame": "Jump (1).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (2).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (3).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (4).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (5).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (6).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (7).png",
+          "duration":0,
+          "visible":false
+        },
+        {
+          "key": "cat",
+          "frame": "Jump (8).png",
+          "duration":0,
+          "visible":false
+        }
+      ],
+      "frameRate": 20,
+      "skipMissedFrames": true,
+      "delay": 0,
+      "repeat": 0,
+      "repeatDelay": 0,
+      "yoyo": false,
+      "showOnStart": false,
+      "hideOnComplete": false
+    }
+  ],
+  "globalTimeScale":1
+}

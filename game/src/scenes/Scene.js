@@ -40,6 +40,16 @@ class Scene extends Phaser.Scene {
     // we just return an already resolved promise
     return Promise.resolve();
   }
+
+  /**
+   * Waits the given milliseconds and resolves the promise that is returned
+   *
+   * @param {number} milliseconds
+   * @returns {Promise}
+   */
+  wait(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
 }
 
 export default Scene;

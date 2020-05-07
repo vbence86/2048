@@ -1,0 +1,70 @@
+{
+"frames": {
+	"Button_05.png": {
+		"frame": {"x":1046, "y":897, "w":363, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":363,"h":178},
+		"sourceSize": {"w":363,"h":178}
+	},
+	"Button_06.png": {
+		"frame": {"x":1046, "y":1076, "w":362, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":362,"h":178},
+		"sourceSize": {"w":362,"h":178}
+	},
+	"Button_07.png": {
+		"frame": {"x":1046, "y":1255, "w":362, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":362,"h":178},
+		"sourceSize": {"w":362,"h":178}
+	},
+	"Button_08.png": {
+		"frame": {"x":1046, "y":1434, "w":362, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":362,"h":178},
+		"sourceSize": {"w":362,"h":178}
+	},
+	"Button_09.png": {
+		"frame": {"x":1409, "y":1076, "w":177, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":177,"h":178},
+		"sourceSize": {"w":177,"h":178}
+	},
+	"Button_10.png": {
+		"frame": {"x":1410, "y":897, "w":176, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":176,"h":178},
+		"sourceSize": {"w":176,"h":178}
+	},
+	"Button_11.png": {
+		"frame": {"x":1409, "y":1434, "w":176, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":176,"h":178},
+		"sourceSize": {"w":176,"h":178}
+	},
+	"Button_12.png": {
+		"frame": {"x":1409, "y":1255, "w":176, "h":178},
+		"spriteSourceSize": {"x":0,"y":0,"w":176,"h":178},
+		"sourceSize": {"w":176,"h":178}
+	},
+	"Windows_02.png": {
+		"frame": {"x":0, "y":0, "w":1045, "h":837},
+		"spriteSourceSize": {"x":0,"y":0,"w":1045,"h":837},
+		"sourceSize": {"w":1045,"h":837}
+	},
+	"Windows_03.png": {
+		"frame": {"x":0, "y":838, "w":1045, "h":716},
+		"spriteSourceSize": {"x":0,"y":0,"w":1045,"h":716},
+		"sourceSize": {"w":1045,"h":716}
+	},
+	"Windows_12.png": {
+		"frame": {"x":1046, "y":424, "w":617, "h":472},
+		"spriteSourceSize": {"x":0,"y":0,"w":617,"h":472},
+		"sourceSize": {"w":617,"h":472}
+	},
+	"Windows_13.png": {
+		"frame": {"x":1046, "y":0, "w":618, "h":423},
+		"spriteSourceSize": {"x":0,"y":0,"w":618,"h":423},
+		"sourceSize": {"w":618,"h":423}
+	}
+
+},
+"meta": {
+	"image": "sprites.png",
+	"size": {"w": 1665, "h": 1613},
+	"scale": "1"
+}
+}

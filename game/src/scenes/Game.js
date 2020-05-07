@@ -2,12 +2,20 @@ import Phaser from 'phaser';
 import Scene from './Scene';
 import TileView from '../components/TileView';
 import TileModel from '../logic/TileModel';
+import FeaturePopup from '../components/gui/FeaturePopup';
 
 // resources
-import tileImg from "../assets/tile.png";
-import bricksImg from "../assets/bricks.jpg";
-import bombImg from "../assets/bomb.png";
-import explosionImg from "../assets/explosion.png";
+import tileImg from '../assets/tile.png';
+import bricksImg from '../assets/bricks.jpg';
+import bombImg from '../assets/bomb.png';
+import chestImg from '../assets/chest.png';
+import keyImg from '../assets/key.png';
+import guiImg from '../assets/gui.png';
+import guiAtlas from '../assets/gui.json';
+import explosionImg from '../assets/explosion.png';
+import animJson from '../assets/animations.json';
+import catImg from '../assets/cat.png';
+import catAtlas from '../assets/cat.json';
 
 /**
  * Return the index of the row by the given index
@@ -43,10 +51,15 @@ class Game extends Scene {
    * Preload state
    */
   preload() {
+    this.load.animation('animData', animJson);
     this.load.image('tile', tileImg);
     this.load.image('bricks', bricksImg);
     this.load.image('bomb', bombImg);
+    this.load.image('key', keyImg);
+    this.load.image('chest', chestImg);
     this.load.spritesheet('explosion', explosionImg, { frameWidth: 192, frameHeight: 192 });
+    this.load.atlas('gui', guiImg, guiAtlas);
+    this.load.atlas('cat', catImg, catAtlas);
   }
 
   /**
@@ -54,9 +67,9 @@ class Game extends Scene {
    */
   create() {
     this.initTileContainer();
+    this.initFeaturePopup();
     this.initInputListeners();
     this.initGameEventListeners();
-    this.initAnimations();
     this.startGame();
   }
 
@@ -69,7 +82,13 @@ class Game extends Scene {
     this.tileViews.x = tilesPadding / 2;
     this.tileSize = Math.min((this.sys.canvas.width - tilesPadding) / 4, (this.sys.canvas.height - tilesPadding) / 4 / 2);
     this.fieldArray = getFieldArray();
-    this.canMove = false;
+  }
+
+  /**
+   * Sets up the 2048 tiles and related helper variables
+   */
+  initFeaturePopup() {
+    this.featurePopup = new FeaturePopup({ scene: this });
   }
 
   /**
@@ -78,7 +97,9 @@ class Game extends Scene {
   initGameEventListeners() {
     this.emitter = new Phaser.Events.EventEmitter();
 
-    this.emitter.on('tile/merge/animationcomplete', this.onMergeAnimationComplete.bind(this));
+    this.emitter.on('tile/merge/animationcomplete', this.triggerMergeEvents.bind(this));
+    this.emitter.on('tile/merge/animationcomplete', this.showMergeResultPopup.bind(this));
+    this.emitter.on('tile/remove', this.triggerRemoveEvents.bind(this));
   }
 
   /**
@@ -124,26 +145,21 @@ class Game extends Scene {
   }
 
   /**
-   * Init animations
-   */
-  initAnimations() {
-    this.anims.create({
-      key: 'explosion',
-      frames: this.anims.generateFrameNumbers('explosion'),
-      frameRate: 20,
-    });    
-  }
-
-  /**
    * Kicks off the gameplay
    */
-  startGame() {
-    // at the beginning of the game we add two "2"
-    this.addNewTile(TileModel.create(TileModel.Type.Number));
-    this.addNewTile(TileModel.create(TileModel.Type.Number));
-    this.addNewTile(TileModel.create(TileModel.Type.Brick));
-    this.addNewTile(TileModel.create(TileModel.Type.Brick));
-    this.addNewTile(TileModel.create(TileModel.Type.Brick));
+  async startGame() {
+    this.canMove = false;
+
+    await this.addNewTile(TileModel.create(TileModel.Type.Number)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Number)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Brick)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Brick)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Brick)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Key)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Chest)),
+    await this.addNewTile(TileModel.create(TileModel.Type.Cat, { value: 5 })),
+
+    this.canMove = true;
   }
 
   /**
@@ -152,43 +168,44 @@ class Game extends Scene {
    * @param {object} model 
    */
   addNewTile(model) {
-    let position;
-    // choosing an empty tile in the field
-    do {
-      position = Math.floor(Math.random() * 16);
-    } while (!this.fieldArray[position].isEmpty());
+    return new Promise(resolve => {
+      let position;
+      // choosing an empty tile in the field
+      do {
+        position = Math.floor(Math.random() * 16);
+      } while (!this.fieldArray[position].isEmpty());
 
-    this.fieldArray[position] = model;
+      this.fieldArray[position] = model;
 
-    // containter object
-    const x = toCol(position) * this.tileSize; 
-    const y = toRow(position) * this.tileSize;
-    const tile = new TileView({
-      scene: this, 
-      tileSize: this.tileSize,
-      x,
-      y,
-      position,
-      model,
-    });
-    
-    // adding container to the group
-    this.tileViews.add(tile);
-    
-    // creation of a new tween for the tile sprite
-    const fadeIn = this.tweens.add({
-      targets: [tile],
-      duration: 250,
-      alpha: {
-        getStart: () => 0,
-        getEnd: () => 1,
-      },
-      onComplete: () => {
-        // updating tile numbers. This is not necessary the 1st time, anyway
-        this.updateTiles();
-        // now I can move
-        this.canMove = true;
-      },
+      // containter object
+      const x = toCol(position) * this.tileSize; 
+      const y = toRow(position) * this.tileSize;
+      const tile = new TileView({
+        scene: this, 
+        tileSize: this.tileSize,
+        x,
+        y,
+        position,
+        model,
+      });
+      
+      // adding container to the group
+      this.tileViews.add(tile);
+      
+      // creation of a new tween for the tile sprite
+      const fadeIn = this.tweens.add({
+        targets: [tile],
+        duration: 250,
+        alpha: {
+          getStart: () => 0,
+          getEnd: () => 1,
+        },
+        onComplete: () => {
+          this.updateTiles();
+          resolve();
+        },
+      });
+
     });
   }
 
@@ -197,13 +214,32 @@ class Game extends Scene {
    *
    * @param {object} config
    */
-  addNewAnimation(config) {
+  addEffect(config) {
     const { x, y, id, animationId } = config;
     const sprite = this.add.sprite(x, y, id);
     sprite.setOrigin(0);
     const animComplete = () => sprite.destroy();
     sprite.on('animationcomplete', animComplete);
     sprite.play(animationId || id);
+  }
+
+  /** 
+   * Completes the moves placement and create another "2" on the matrix
+   * @param {boolean} hasMoved
+   */
+  async endMove(hasMoved) {
+    // purge the matrix from placeholders
+    this.fieldArray.forEach((model, idx) => {
+      if (model.willBeRemoved()) {
+        this.fieldArray[idx] = TileModel.createEmpty();
+      }
+    });
+
+    if (hasMoved) {
+      await this.addNewTile(TileModel.create(TileModel.Type.Number));
+    }
+
+    this.canMove = true;
   }
 
   /**
@@ -220,31 +256,7 @@ class Game extends Scene {
       }
     });
     toDelete.forEach(item => this.tileViews.remove(item));
-  }
-
-  /** 
-   * Completes the moves placement and create another "2" on the matrix
-   * @param {boolean} hasMoved
-   */
-  endMove(hasMoved) {
-    // purge the matrix from placeholders
-    this.fieldArray.forEach((model, idx) => {
-      if (model.isPlaceholder()) {
-        this.fieldArray[idx] = TileModel.createEmpty();
-      }
-    });
-
-    // if we move the tile...
-    if (hasMoved) {
-      this.addNewTile(TileModel.create(TileModel.Type.Number));
-      if (Math.random() < 0.25) {
-        this.addNewTile(TileModel.create(TileModel.Type.Bomb));
-      }
-    } else {
-      // otherwise just let the player be able to move again
-      this.canMove = true;
-    }
-  }
+  }  
 
   /**
    * Moves a specific tile
@@ -255,8 +267,7 @@ class Game extends Scene {
    */
   moveTile(tile, from, to, remove) {
     const fromModel = Object.assign( Object.create( Object.getPrototypeOf(this.fieldArray[from])), this.fieldArray[from]);
-    const fromId = this.fieldArray[to].getId();
-    const toId = this.fieldArray[from].getId();
+    const toModel = Object.assign( Object.create( Object.getPrototypeOf(this.fieldArray[to])), this.fieldArray[to]);
     this.fieldArray[to] = this.fieldArray[from];
     this.fieldArray[from] = TileModel.createEmpty();
     tile.pos = to;
@@ -270,15 +281,31 @@ class Game extends Scene {
       onComplete: () => {
         if (remove) {
           tile.destroy();
-          this.emitter.emit('tile/merge/animationcomplete', fromModel, tile, fromId, toId);
+          this.emitter.emit('tile/merge/animationcomplete', {
+            newModel: this.fieldArray[to],
+            fromModel,
+            toModel,
+            tile,
+          });
         }
       },
     });
 
     if (remove) {
-      this.mergeTiles(fromId, to, tile);
+      this.mergeTiles(toModel, this.fieldArray[to]);
     }
   }
+
+  /**
+   * Invoked when two tiles are merged together. It must return
+   * the id of the result from the merge
+   *
+   * @param {object} fromModel
+   * @param {object} toModel
+   */
+  mergeTiles(fromModel, toModel) {
+    toModel.mergeFrom(fromModel);
+  }  
 
   /**
    * Execute the move to the left
@@ -340,7 +367,7 @@ class Game extends Scene {
   /**
    * Moves the tile up
    */
-  moveUp(){
+  moveUp() {
     if (!this.canMove) return;
     this.canMove = false;
     let moved = false;
@@ -474,30 +501,55 @@ class Game extends Scene {
   }
 
   /**
-   * Invoked when two tiles are merged together. It must return
-   * the id of the result from the merge
+   * Callback to trigger further events 
    *
-   * @param {number} from
-   * @param {number} to
-   * @param {object} tile
+   * @param {object} - { toModel: object, newModel: object, tile: object }
    */
-  mergeTiles(fromId, to, tile) {
-    const targetModel = this.fieldArray[to];
-    targetModel.mergeFrom(fromId);
+  triggerMergeEvents({ fromModel, tile }) {
+    const events = fromModel.getEvents();
+    if (events && events.merge) {
+      this.addEffect({
+        x: tile.x,
+        y: tile.y,
+        id: events.merge.sprite,
+        animationId: events.merge.animationId,
+      });
+    }
   }
 
   /**
-   * Callback to trigger further animations 
+   * Callback to trigger further events 
+   *
+   * @param {object} - { toModel: object, newModel: object, tile: object }
    */
-  onMergeAnimationComplete(model, tile, fromId, toId) {
-    const animations = model.getAnimations();
-    if (animations && animations.merge)
-    this.addNewAnimation({
-      x: tile.x,
-      y: tile.y,
-      id: animations.merge.sprite,
-      animationId: animations.merge.animationId,
-    });
+  triggerRemoveEvents({ model }) {
+    const tile = model.getView();
+    const events = model.getEvents();
+    if (events && events.remove) {
+      this.addEffect({
+        x: tile.x,
+        y: tile.y,
+        id: events.remove.sprite,
+        animationId: events.remove.animationId,
+      });
+    }
+  }
+
+  /**
+   * Callback to trigger the feature popup
+   *
+   * @param {object} - { toModel: object, newModel: object, tile: object }
+   */
+  async showMergeResultPopup({ toModel, newModel }) {
+    if (!toModel.doesShowMergeResultInPopup()) return;
+    const spriteKey = newModel.getSpriteKey();
+    const sprite = this.add.sprite(0, 0, spriteKey);
+
+    this.canMove = false;
+    await this.featurePopup.show({ sprite });
+    await this.wait(1500);
+    await this.featurePopup.hide();
+    this.canMove = true;
   }
 }
 

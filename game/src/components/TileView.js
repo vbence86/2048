@@ -25,17 +25,6 @@ const TINT_COLORS = {
   65536: 0xFF0000, 
 };
 
-/**
- * Rainbow table of codes for title sprites
- *
- * @type {object}
- */
-const SPRITES = {
-  [TileModel.Type.Brick]: 'bricks',
-  [TileModel.Type.Number]: 'tile',
-  [TileModel.Type.Bomb]: 'bomb',
-};
-
 class TileView extends Phaser.GameObjects.Container {
   /**
    * Creates the custom container class
@@ -69,32 +58,37 @@ class TileView extends Phaser.GameObjects.Container {
   bind(model) {
     const id = model.getId();
     const value = model.getValue();
+    const sprite = model.getSpriteKey();
 
-    this.updateSprite(id);
+    this.updateSprite(sprite);
     this.updateText(value);
     this.updateEffects(id, value);
 
     this._id = id;
     this._value = value;
     this._model = model;
+    this._model.setView(this);
   }
 
   /**
    * Creates the sprite based on the given id
    *
-   * @param {string} id
+   * @param {string} sprite
    */
-  updateSprite(id) {
-    if (this.shouldUpdateSprite(id)) {
+  updateSprite(sprite) {
+    if (this.shouldUpdateSprite(sprite)) {
       if (this.sprite) {
         this.sprite.destroy();
       }
-      this.sprite = this.scene.add.sprite(0, 0, SPRITES[id]);
+      this.sprite = this.scene.add.sprite(0, 0, sprite);
       this.sprite.setScale(this.tileSize / this.sprite.width, this.tileSize / this.sprite.height);
       this.sprite.setOrigin(0);
+      this.sprite.depth = 0;
       this.add(this.sprite);
+      this._sprite = sprite;
+
+      this.animate('idle');
     }
-    this.sprite.depth = 0;
   }
 
   /**
@@ -125,12 +119,27 @@ class TileView extends Phaser.GameObjects.Container {
   }
 
   /**
+   * Triggers the given animation against the sprite object
+   *
+   * @params {string} key
+   */
+  animate(key) {
+    const id = `${this._sprite}-${key}`;
+    if (!this.scene.anims.get(id)) return;
+    if (key !== 'idle') {
+      const animComplete = () => this.animate('idle');
+      this.sprite.once('animationcomplete', animComplete);      
+    }
+    this.sprite.play(id);
+  }
+
+  /**
    * Returns true if the previous sprite must be replaced with a new one
    *
    * @returns {boolean}
    */
-  shouldUpdateSprite(id) {
-    return id !== this._id;
+  shouldUpdateSprite(sprite) {
+    return sprite !== this._sprite;
   }
 
   /**
