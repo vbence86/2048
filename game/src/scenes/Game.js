@@ -96,10 +96,6 @@ class Game extends Scene {
    */
   initGameEventListeners() {
     this.emitter = new Phaser.Events.EventEmitter();
-
-    this.emitter.on('tile/merge/animationcomplete', this.triggerMergeEvents.bind(this));
-    this.emitter.on('tile/merge/animationcomplete', this.showMergeResultPopup.bind(this));
-    this.emitter.on('tile/remove', this.triggerRemoveEvents.bind(this));
   }
 
   /**
@@ -209,20 +205,6 @@ class Game extends Scene {
     });
   }
 
-  /**
-   * Creates a new animating sprite based on the given configuartion param
-   *
-   * @param {object} config
-   */
-  addEffect(config) {
-    const { x, y, id, animationId } = config;
-    const sprite = this.add.sprite(x, y, id);
-    sprite.setOrigin(0);
-    const animComplete = () => sprite.destroy();
-    sprite.on('animationcomplete', animComplete);
-    sprite.play(animationId || id);
-  }
-
   /** 
    * Completes the moves placement and create another "2" on the matrix
    * @param {boolean} hasMoved
@@ -234,6 +216,8 @@ class Game extends Scene {
         this.fieldArray[idx] = TileModel.createEmpty();
       }
     });
+
+    this.updateTiles();
 
     if (hasMoved) {
       await this.addNewTile(TileModel.create(TileModel.Type.Number));
@@ -265,58 +249,79 @@ class Game extends Scene {
    * @param {number} to
    * @param {boolean} remove
    */
-  moveTile(tile, from, to, remove) {
+  async moveTile(tile, from, to, remove) {
+    const swapResult = this.swapTiles({ tile, from, to });
+    await this.moveTileAnimation({ tile, to });
+
+    if (remove) {
+      // @TODO Make a Class definition for SwapResult
+      this.mergeTiles(swapResult);
+      this.triggerRemoveEvents(swapResult);
+      this.triggerMergeEvents(swapResult);
+      await this.showMergeResultPopup(swapResult);
+    }
+  }
+
+  /**
+   * Swaps the models in the tiles matrix
+   *
+   * @params {object} - { to: number, from: number, tile: TileView }
+   * @returns {object} result of the swap
+   */
+  swapTiles({ to, from, tile }) {
     const fromModel = Object.assign( Object.create( Object.getPrototypeOf(this.fieldArray[from])), this.fieldArray[from]);
     const toModel = Object.assign( Object.create( Object.getPrototypeOf(this.fieldArray[to])), this.fieldArray[to]);
     this.fieldArray[to] = this.fieldArray[from];
     this.fieldArray[from] = TileModel.createEmpty();
     tile.pos = to;
 
-    // then we create a tween
-    const movement = this.tweens.add({
-      targets: [tile],
-      duration: 100,
-      x: this.tileSize * (toCol(to)),
-      y: this.tileSize * (toRow(to)),
-      onComplete: () => {
-        if (remove) {
-          tile.destroy();
-          this.emitter.emit('tile/merge/animationcomplete', {
-            newModel: this.fieldArray[to],
-            fromModel,
-            toModel,
-            tile,
-          });
-        }
-      },
-    });
+    return {
+      newModel: this.fieldArray[to],
+      fromModel,
+      toModel,
+      tile,
+    };
+  }
 
-    if (remove) {
-      this.mergeTiles(toModel, this.fieldArray[to]);
-    }
+  /**
+   * Triggers the tile movement animation and returns a Promise
+   * that is resolved if the tween is ready
+   *
+   * @param {object} - {tile: TileView, to: number }
+   */
+  moveTileAnimation({ tile, to }) {
+    return new Promise(resolve =>
+      this.tweens.add({
+        targets: [tile],
+        duration: 100,
+        x: this.tileSize * toCol(to),
+        y: this.tileSize * toRow(to),
+        onComplete: resolve,
+      })
+    );
   }
 
   /**
    * Invoked when two tiles are merged together. It must return
    * the id of the result from the merge
    *
-   * @param {object} fromModel
-   * @param {object} toModel
+   * @param {object} - { fromModel: TileModel, newModel: TileModel }
    */
-  mergeTiles(fromModel, toModel) {
-    toModel.mergeFrom(fromModel);
+  mergeTiles({ toModel, newModel, tile }) {
+    newModel.mergeFrom(toModel);
+    tile.destroy();
   }  
 
   /**
    * Execute the move to the left
    */
-  moveLeft() {
+  async moveLeft() {
     // Is the player allowed to move?
     if (!this.canMove) return;
+    const moves = [];
     // the player can move, let's set "canMove" to false to prevent moving again until the move process is done
     this.canMove = false;
     // keeping track if the player moved, i.e. if it's a legal move
-    let moved = false;
 
     this.tileViews.sort('x');
     // looping through each element in the group
@@ -354,23 +359,22 @@ class Game extends Scene {
 
       // if we can actually move...
       if (col !== i + 1) {
-        // set moved to true
-       moved = true;
        // moving the tile "item" from row*4+col to row*4+i+1 and (if allowed) remove it
-       this.moveTile(item, row * 4 + col, row * 4 + i + 1, remove);
+       moves.push(this.moveTile(item, row * 4 + col, row * 4 + i + 1, remove));
       }
     });
-    // completing the move
-    this.endMove(moved);
+    
+    await Promise.all(moves);
+    this.endMove(moves.length);
   }
 
   /**
    * Moves the tile up
    */
-  moveUp() {
+  async moveUp() {
     if (!this.canMove) return;
+    const moves = [];
     this.canMove = false;
-    let moved = false;
 
     this.tileViews.sort('y');
     this.tileViews.getAll().forEach((item) => {
@@ -402,21 +406,22 @@ class Game extends Scene {
       }
 
       if (row !== i + 1) {
-       moved = true;
-       this.moveTile(item, row * 4 + col, (i+1) * 4 + col, remove);
+       moves.push(this.moveTile(item, row * 4 + col, (i+1) * 4 + col, remove));
       }
     });
-    // completes the move
-    this.endMove(moved);
+
+    await Promise.all(moves);
+    this.endMove(moves.length);
   }
 
   /**
    * Executes the move right
    */
-  moveRight() {
+  async moveRight() {
     if (!this.canMove) return;
+    const moves = [];
     this.canMove = false;
-    let moved = false;
+
     this.tileViews.sort('x');
     this.tileViews.getAll().reverse().forEach((item) => {
       const row = toRow(item.pos);
@@ -447,21 +452,22 @@ class Game extends Scene {
         }
       }
       if (col !== i - 1 ) {
-        moved = true;
-        this.moveTile(item, row * 4 + col, row * 4 + i - 1, remove);
+        moves.push(this.moveTile(item, row * 4 + col, row * 4 + i - 1, remove));
       }
     });
 
-    this.endMove(moved);
+    await Promise.all(moves);
+    this.endMove(moves.length);
   }
 
   /**
    * Executes the move down
    */
-  moveDown() {
+  async moveDown() {
     if (!this.canMove) return;
+    const moves = [];
+
     this.canMove = false;
-    let moved = false;
     this.tileViews.sort('y');
     this.tileViews.getAll().reverse().forEach((item) => {
       const row = toRow(item.pos);
@@ -493,11 +499,12 @@ class Game extends Scene {
         }
       }
       if (row !== i - 1) {
-        moved = true;
-        this.moveTile(item, row * 4 + col, (i - 1) * 4 + col, remove);
+        moves.push(this.moveTile(item, row * 4 + col, (i - 1) * 4 + col, remove));
       }
     });
-    this.endMove(moved);
+
+    await Promise.all(moves);
+    this.endMove(moves.length);
   }
 
   /**
@@ -522,17 +529,19 @@ class Game extends Scene {
    *
    * @param {object} - { toModel: object, newModel: object, tile: object }
    */
-  triggerRemoveEvents({ model }) {
-    const tile = model.getView();
-    const events = model.getEvents();
-    if (events && events.remove) {
-      this.addEffect({
-        x: tile.x,
-        y: tile.y,
-        id: events.remove.sprite,
-        animationId: events.remove.animationId,
-      });
-    }
+  triggerRemoveEvents({ newModel }) {
+    const events = newModel.getEvents();
+
+    if (!newModel.willBeRemoved()) return;
+    if (!events || !events.remove) return;
+
+    const { x, y } = newModel.getView();
+    this.addEffect({
+      id: events.remove.sprite,
+      animationId: events.remove.animationId,
+      x,
+      y,
+    });
   }
 
   /**
@@ -551,6 +560,20 @@ class Game extends Scene {
     await this.featurePopup.hide();
     this.canMove = true;
   }
+
+  /**
+   * Creates a new animating sprite based on the given configuartion param
+   *
+   * @param {object} config
+   */
+  addEffect(config) {
+    const { x, y, id, animationId } = config;
+    const sprite = this.add.sprite(x, y, id);
+    sprite.setOrigin(0);
+    const animComplete = () => sprite.destroy();
+    sprite.on('animationcomplete', animComplete);
+    sprite.play(animationId || id);
+  }  
 }
 
 export default Game;
