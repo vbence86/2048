@@ -12,3 +12,75 @@ body {
   transform: translate(0%, -50%);
   height: 100%;          
 }
+
+#orientation-warning {
+  display: none;
+  width: 90px;
+  height: 155px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);  
+}
+
+.smartphone {
+  width: 80px;
+  height: 120px;
+  margin: 0;
+  border: 5px #eee solid;
+  border-top-width: 15px;
+  border-bottom-width: 20px;  
+  border-radius: 4px;
+  animation: smartphone 1.5s ease-in-out infinite;
+ }
+
+@keyframes smartphone {
+  0% { transform: rotate(-90deg); 
+       opacity: 0; }
+  25% { transform: rotate(-90deg);
+        opacity: 1; }
+  50% { transform: rotate(0deg); }
+  75% { opacity: 1; }
+  100% { transform: rotate(0deg); 
+         opacity: 0;}
+}
+
+.smartphone:before {
+  content: '';
+  display: block;
+  width: 10px;
+  height: 3px;
+  margin: -9px auto;
+  background: #ddd;
+  border-radius: 4px;
+}
+
+.smartphone:after {
+  content: '';
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 4px auto;
+  background: #ddd;
+  border-radius: 10px;
+}
+
+.smartphone .content {
+  width: 60px;
+  height: 100px;
+  margin: 15px 0 0 0;
+  padding: 10px;
+  background: #555;
+  color: #903163;
+  font-size: 0.5em;
+  overflow: hidden;
+}
+
+@media only screen and (orientation: landscape){
+  #game { display: none; }
+  #orientation-warning { display: block; }
+}
+
+@media only screen and (orientation: portrait){
+  #orientation-warning { display: none; }
+}

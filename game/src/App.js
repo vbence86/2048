@@ -28,8 +28,9 @@ class App {
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: width || DEVICE_WIDTH,
         height: height || DEVICE_HEIGHT,
-      },      
+      },
       renderer: Phaser.AUTO,
+      disableContextMenu: true,
       clearBeforeRender: false,
     });
   }
